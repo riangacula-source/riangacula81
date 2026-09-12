@@ -1,0 +1,8 @@
+Uber Profit Pilot V2 - Deployment Instructions
+
+1. Put all 4 files (index.html, sw.js, manifest.json, README.txt) into a single folder.
+2. Sign up for a free Netlify account (netlify.com).
+3. Drag and drop the folder into the Netlify "Sites" dashboard to deploy instantly.
+4. Open the generated HTTPS link in Google Chrome on your Android phone.
+5. Tap the three-dot menu in Chrome and select "Install app" or "Add to Home screen".
+6. The PWA will now function fully offline with local storage retention.

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Uber Profit Pilot V2</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f4f4f9; padding: 20px; margin: 0; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; box-sizing: border-box; }
+        button { background: #000; color: #fff; padding: 14px; width: 100%; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .score { font-size: 24px; font-weight: bold; text-align: center; margin: 10px 0; padding: 10px; border-radius: 8px; }
+        .score.accept { background: #d4edda; color: #155724; }
+        .score.pass { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h3>📍 Trip Decision Command Center (Long Island)</h3>
+        <div class="grid">
+            <input type="number" id="fare" placeholder="Est. Fare ($)" step="0.01">
+            <input type="number" id="miles" placeholder="Total Miles (Inc. Deadhead)" step="0.1">
+            <input type="number" id="mins" placeholder="Est. Minutes" step="1">
+            <select id="destination">
+                <option value="local">Local (Nassau/Suffolk)</option>
+                <option value="jfk">JFK Airport</option>
+                <option value="lga">LGA Airport</option>
+                <option value="isp">ISP (MacArthur)</option>
+            </select>
+        </div>
+        <button onclick="calculateTrip()">Score This Trip</button>
+        <div id="result"></div>
+    </div>
+
+    <div class="card">
+        <h3>🚗 Vehicle ROI: CX-5 Gas vs CX-50 Hybrid</h3>
+        <p><em>Operating cost assumed at $0.32/mi (Gas) vs $0.21/mi (Hybrid) with local gas averages.</em></p>
+        <div class="grid" id="roi-stats">
+            <div><b>CX-5 Profit/Hr:</b> <span id="cx5-prof">$0.00</span></div>
+            <div><b>CX-50 Profit/Hr:</b> <span id="cx50-prof">$0.00</span></div>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js');
+        }
+
+        function calculateTrip() {
+            const fare = parseFloat(document.getElementById('fare').value);
+            const miles = parseFloat(document.getElementById('miles').value);
+            const mins = parseFloat(document.getElementById('mins').value);
+            const dest = document.getElementById('destination').value;
+
+            if(!fare || !miles || !mins) return alert("Enter all trip details.");
+
+            // Basic AI Decision Logic for Long Island
+            const grossPerHour = (fare / mins) * 60;
+            const grossPerMile = fare / miles;
+            
+            // CX-5 Gas vs CX-50 Hybrid True Costs
+            const costCX5 = miles * 0.32;
+            const costCX50 = miles * 0.21;
+
+            const netPerHourCX5 = ((fare - costCX5) / mins) * 60;
+            const netPerHourCX50 = ((fare - costCX50) / mins) * 60;
+
+            let score = (grossPerHour > 25 && grossPerMile > 1.20) ? "ACCEPT" : "PASS";
+            let scoreClass = score === "ACCEPT" ? "accept" : "pass";
+
+            // Airport penalty for return deadhead
+            if((dest === 'jfk' || dest === 'lga') && grossPerMile < 1.50) {
+                score = "PASS (Deadhead Risk)";
+                scoreClass = "pass";
+            }
+
+            document.getElementById('result').innerHTML = `
+                <div class="score ${scoreClass}">Decision: ${score}</div>
+                <p>Gross: $${grossPerHour.toFixed(2)}/hr | $${grossPerMile.toFixed(2)}/mi</p>
+            `;
+
+            document.getElementById('cx5-prof').innerText = `$${netPerHourCX5.toFixed(2)}`;
+            document.getElementById('cx50-prof').innerText = `$${netPerHourCX50.toFixed(2)}`;
+
+            // Save to LocalStorage
+            let history = JSON.parse(localStorage.getItem('tripHistory')) || [];
+            history.push({ fare, miles, mins, dest, date: new Date().toISOString() });
+            localStorage.setItem('tripHistory', JSON.stringify(history));
+        }
+    </script>
+</body>
+</html>
